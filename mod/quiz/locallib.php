@@ -2063,12 +2063,13 @@ function quiz_add_quiz_question($questionid, $quiz, $page = 0, $maxmark = null) 
         $slot->slot = $lastslotbefore + 1;
         $slot->page = min($page, $maxpage + 1);
 
-        $DB->execute("
-                UPDATE {quiz_sections}
-                   SET firstslot = firstslot + 1
-                 WHERE quizid = ?
-                   AND firstslot > ?
-                ", array($quiz->id, max($lastslotbefore, 1)));
+        $first_slots = $DB->get_records_sql('SELECT firstslot FROM {quiz_sections} WHERE quizid = ? AND firstslot > ?', array($quiz->id, max($lastslotbefore, 1)));
+        $next_slots = [];
+
+        foreach($first_slots as $a_slot) {
+            $next_slots[$a_slot->firstslot] = $a_slot->firstslot + 1;
+        }
+        update_field_with_unique_index('quiz_sections', 'firstslot', $next_slots, ['quizid'=>$quiz->id]);
 
     } else {
         $lastslot = end($slots);
